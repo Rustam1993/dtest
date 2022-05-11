@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -49,17 +50,29 @@ func getUsers() []*User {
 func homePage(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Welcome to the HomePage!")
 	fmt.Println("Endpoint Hit: homePage")
+	name, err := os.Hostname()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("hostname:", name)
 }
 
 func userPage(w http.ResponseWriter, r *http.Request) {
 	users := getUsers()
 
 	fmt.Println("Endpoint Hit: usersPage")
+	name, err := os.Hostname()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("hostname:", name)
 	json.NewEncoder(w).Encode(users)
 }
 
 func main() {
 	http.HandleFunc("/", homePage)
 	http.HandleFunc("/users", userPage)
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe(":8081", nil))
 }

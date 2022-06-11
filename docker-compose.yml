@@ -33,7 +33,7 @@ services:
       context: .
       dockerfile: api.Dockerfile
     ports:
-      - "8080:8080"
+      - "8081:8081"
     # we are depending on the mysql backend
     depends_on:
       - db

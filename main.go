@@ -2,11 +2,9 @@ package main
 
 import (
 	"database/sql"
-	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
-	"os"
+	"text/template"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -15,6 +13,29 @@ type User struct {
 	ID   int    `json:"id"`
 	Name string `json:"name"`
 }
+
+type Context struct {
+	Title string
+	Name  string
+	Users []*User
+}
+
+const StatsDoc = `
+<!DOCTYPE html>
+<html>
+    <head>
+        {{.Title}}
+    </head>
+    <body>
+        <h3>Hi, {{.Name}}. Here is list of db users:</h3>
+        <ul>
+            {{range $key, $val := .Users}}
+                <li>ID:{{$key}}, Name : {{$val.Name}}</li>
+            {{end}}
+        </ul>
+    </body>
+</html>
+`
 
 func getUsers() []*User {
 	// Open up our database connection.
@@ -48,31 +69,25 @@ func getUsers() []*User {
 }
 
 func homePage(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Welcome to the HomePage!")
-	fmt.Println("Endpoint Hit: homePage")
-	name, err := os.Hostname()
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println("hostname:", name)
+	http.ServeFile(w, r, "./html/static/stats.html")
 }
 
-func userPage(w http.ResponseWriter, r *http.Request) {
+func statPage(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Content Type", "text/html")
 	users := getUsers()
 
-	fmt.Println("Endpoint Hit: usersPage")
-	name, err := os.Hostname()
-	if err != nil {
-		panic(err)
+	templates := template.New("template")
+	templates.New("doc").Parse(StatsDoc)
+	context := Context{
+		Title: "Statistics",
+		Name:  "Admin",
+		Users: users,
 	}
-
-	fmt.Println("hostname:", name)
-	json.NewEncoder(w).Encode(users)
+	templates.Lookup("doc").Execute(w, context)
 }
 
 func main() {
 	http.HandleFunc("/", homePage)
-	http.HandleFunc("/users", userPage)
+	http.HandleFunc("/statistics", statPage)
 	log.Fatal(http.ListenAndServe(":8081", nil))
 }
